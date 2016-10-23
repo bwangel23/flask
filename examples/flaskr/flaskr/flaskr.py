@@ -13,7 +13,9 @@
 import os
 from sqlite3 import dbapi2 as sqlite3
 from flask import Flask, request, session, g, redirect, url_for, abort, \
-     render_template, flash
+     render_template, flash, jsonify
+# flash 函数的作用是向这个Session中的下一个请求发送一条消息
+# g 是一个全局的对象，用来存储数据
 
 
 # create our little application :)
@@ -25,7 +27,7 @@ app.config.update(dict(
     DEBUG=True,
     SECRET_KEY='development key',
     USERNAME='admin',
-    PASSWORD='default'
+    PASSWORD='password'
 ))
 app.config.from_envvar('FLASKR_SETTINGS', silent=True)
 
@@ -33,7 +35,7 @@ app.config.from_envvar('FLASKR_SETTINGS', silent=True)
 def connect_db():
     """Connects to the specific database."""
     rv = sqlite3.connect(app.config['DATABASE'])
-    rv.row_factory = sqlite3.Row
+    rv.row_factory = sqlite3.Row   # 这条语句的作用是让SELECT返回结果为一个字典
     return rv
 
 
@@ -47,7 +49,35 @@ def init_db():
 
 @app.cli.command('initdb')
 def initdb_command():
-    """Creates the database tables."""
+    """Creates the database tables.
+
+    ➜ yundongx@vv2x$ flask --help
+    命令的用法为
+
+    Usage: flask [OPTIONS] COMMAND [ARGS]...
+
+      This shell command acts as general utility script for Flask applications.
+
+      It loads the application configured (either through the FLASK_APP
+      environment variable) and then provides commands either provided by the
+      application or Flask itself.
+
+      The most useful commands are the "run" and "shell" command.
+
+      Example usage:
+
+        $ export FLASK_APP=hello
+        $ export FLASK_DEBUG=1
+        $ flask run
+
+    Options:
+      --help  Show this message and exit.
+
+    Commands:
+      initdb  Creates the database tables.
+      run     Runs a development server.
+      shell   Runs a shell in the app context.
+    """
     init_db()
     print('Initialized the database.')
 
@@ -88,6 +118,11 @@ def add_entry():
     return redirect(url_for('show_entries'))
 
 
+@app.route('/session', methods=['GET'])
+def show_session():
+    return jsonify(session=str(session))
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
@@ -108,3 +143,6 @@ def logout():
     session.pop('logged_in', None)
     flash('You were logged out')
     return redirect(url_for('show_entries'))
+
+if __name__ == '__main__':
+    app.run()
